@@ -1,5 +1,10 @@
 #! /usr/bin/env bash 
 
+#
+# Copyright contributors to the Galasa project
+#
+# SPDX-License-Identifier: EPL-2.0
+#
 #-----------------------------------------------------------------------------------------                   
 #
 # Objectives: Build this repository code locally.
@@ -107,7 +112,7 @@ fi
 source_dir="galasa-managers-parent"
 
 project=$(basename ${BASEDIR})
-h1 "Building ${project}"
+
 
 # Debug or not debug ? Override using the DEBUG flag.
 if [[ -z ${DEBUG} ]]; then
@@ -140,34 +145,41 @@ else
 fi
 mkdir -p ${LOGS_DIR} 2>&1 > /dev/null # Don't show output. We don't care if it already existed.
 
-info "Using source code at ${source_dir}"
-cd ${BASEDIR}/${source_dir}
-if [[ "${DEBUG}" == "1" ]]; then
-    OPTIONAL_DEBUG_FLAG="-debug"
-else
-    OPTIONAL_DEBUG_FLAG="-info"
-fi
 
-# auto plain rich or verbose
-CONSOLE_FLAG=--console=plain
+function build_code {
+    h1 "Building ${project}"
+    info "Using source code at ${source_dir}"
+    cd ${BASEDIR}/${source_dir}
+    if [[ "${DEBUG}" == "1" ]]; then
+        OPTIONAL_DEBUG_FLAG="-debug"
+    else
+        OPTIONAL_DEBUG_FLAG="-info"
+    fi
 
-log_file=${LOGS_DIR}/logs.txt
-info "Log will be placed at ${log_file}"
+    # auto plain rich or verbose
+    CONSOLE_FLAG=--console=plain
 
-if [[ "${build_type}" == "clean" ]]; then
-    goals="clean build check publishToMavenLocal -no-build-cache --no-daemon --parallel"
-else
-    goals="build check publishToMavenLocal --parallel"
-fi
+    log_file=${LOGS_DIR}/logs.txt
+    info "Log will be placed at ${log_file}"
 
-cmd="gradle  \
-${CONSOLE_FLAG} \
--Dorg.gradle.java.home=${JAVA_HOME} \
--PsourceMaven=${SOURCE_MAVEN} ${OPTIONAL_DEBUG_FLAG} \
-${goals} 
-"
+    if [[ "${build_type}" == "clean" ]]; then
+        goals="clean build buildReleaseYaml check publishToMavenLocal -no-build-cache --no-daemon --parallel"
+    else
+        goals="build buildReleaseYaml check publishToMavenLocal --parallel"
+    fi
 
-$cmd 2>&1 > ${log_file}
+    cmd="gradle  \
+    ${CONSOLE_FLAG} \
+    -Dorg.gradle.java.home=${JAVA_HOME} \
+    -PsourceMaven=${SOURCE_MAVEN} ${OPTIONAL_DEBUG_FLAG} \
+    ${goals} 
+    "
 
-rc=$? ; if [[ "${rc}" != "0" ]]; then error "Failed to build ${project} see logs at ${log_file}" ; exit 1 ; fi
-success "Project ${project} built - OK - log is at ${log_file}"
+    $cmd 2>&1 > ${log_file}
+
+    rc=$? ; if [[ "${rc}" != "0" ]]; then error "Failed to build ${project} see logs at ${log_file}" ; exit 1 ; fi
+    success "Project ${project} built - OK - log is at ${log_file}"
+
+}
+
+build_code
